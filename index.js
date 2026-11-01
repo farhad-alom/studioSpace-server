@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config';
@@ -19,7 +20,10 @@ async function getStudioCollection() {
         dbPromise = client.connect()
             .then(() => {
                 console.log('MongoDB connected successfully');
-                return client.db('StudioSpace').collection('StudioCollection');
+
+                return client
+                    .db('StudioSpace')
+                    .collection('StudioCollection');
             })
             .catch((error) => {
                 dbPromise = null;
@@ -38,15 +42,16 @@ app.get('/', (req, res) => {
 // Get all studios
 app.get('/api/studios', async (req, res) => {
     try {
-        const studioCollection = await getStudioCollection();
-        const studios = await studioCollection
+        const collection = await getStudioCollection();
+
+        const studios = await collection
             .find()
             .sort({ _id: -1 })
             .toArray();
 
         res.status(200).json(studios);
     } catch (error) {
-        console.error(error);
+        console.error('Get Studios Error:', error);
         res.status(500).json({ message: 'Failed to fetch studios' });
     }
 });
@@ -58,8 +63,9 @@ app.get('/api/studios/:id', async (req, res) => {
             return res.status(400).json({ message: 'Invalid studio ID' });
         }
 
-        const studioCollection = await getStudioCollection();
-        const studio = await studioCollection.findOne({
+        const collection = await getStudioCollection();
+
+        const studio = await collection.findOne({
             _id: new ObjectId(req.params.id)
         });
 
@@ -69,19 +75,19 @@ app.get('/api/studios/:id', async (req, res) => {
 
         res.status(200).json(studio);
     } catch (error) {
-        console.error(error);
+        console.error('Get Studio Error:', error);
         res.status(500).json({ message: 'Failed to fetch studio' });
     }
 });
 
-// Vercel serverless export
+// Vercel uses this export
 export default app;
 
-// Local development only
+// Localhost uses app.listen()
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+        console.log(`Server running on http://localhost:${PORT}`);
     });
 }
