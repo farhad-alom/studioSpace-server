@@ -3,74 +3,85 @@ import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config';
 import cors from 'cors';
 
-
 const app = express();
 
-// Middleware 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-
-// Server
-const PORT = process.env.PORT || 5000;
+// MongoDB
 const client = new MongoClient(process.env.MONGODB_URI);
 
+let dbPromise;
 
-
-export async function connectToMongoDB() {
-    try {
-        await client.connect();
-        console.log("Mongodb connect for the StudioSpace");
-        return client;
-    } catch (err) {
-        console.dir(err);
+async function getStudioCollection() {
+    if (!dbPromise) {
+        dbPromise = client.connect()
+            .then(() => {
+                console.log('MongoDB connected successfully');
+                return client.db('StudioSpace').collection('StudioCollection');
+            })
+            .catch((error) => {
+                dbPromise = null;
+                throw error;
+            });
     }
+
+    return dbPromise;
 }
-
-
-const mongoClient = await connectToMongoDB()
-const db = mongoClient.db("StudioSpace");
-const studioCollection = db.collection("StudioCollection");
 
 // Test Route
 app.get('/', (req, res) => {
-    res.send('this is the server output as the 5000');
-
+    res.send('StudioSpace Backend is running!');
 });
-// explore route
-// app.get('/api/studios', async (req, res) => {
-//     try {
-//         const { category, search, limit } = req.query;
-//         const query = {};
-//         if (category) query.category = category;
-//         if (search) {
-//             query.$or = [
-//                 { title: { $regex: search, $options: 'i' } },
-//                 { location: { $regex: search, $options: 'i' } },
-//             ];
-//         }
-//         const studios = await studioCollection
-//             .find(query)
-//             .sort({ _id: -1 })
-//             .limit(Number(limit) || 0)
-//             .toArray();
-//         res.json(studios);
-//     } catch (err) {
-//         res.status(500).json({ message: err.message });
-//     }
-// });
+
+// Get all studios
 app.get('/api/studios', async (req, res) => {
-    const studios = await studioCollection.find().sort({ _id: -1 }).toArray();
-    res.json(studios);
+    try {
+        const studioCollection = await getStudioCollection();
+        const studios = await studioCollection
+            .find()
+            .sort({ _id: -1 })
+            .toArray();
+
+        res.status(200).json(studios);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch studios' });
+    }
 });
 
-// studios id
+// Get studio by ID
 app.get('/api/studios/:id', async (req, res) => {
-    const studio = await studioCollection.findOne({ _id: new ObjectId(req.params.id) });
-    res.json(studio);
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid studio ID' });
+        }
+
+        const studioCollection = await getStudioCollection();
+        const studio = await studioCollection.findOne({
+            _id: new ObjectId(req.params.id)
+        });
+
+        if (!studio) {
+            return res.status(404).json({ message: 'Studio not found' });
+        }
+
+        res.status(200).json(studio);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch studio' });
+    }
 });
 
+// Vercel serverless export
+export default app;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Local development only
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
