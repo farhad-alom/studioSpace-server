@@ -38,26 +38,30 @@ app.get('/', (req, res) => {
 
 });
 // explore route
+// app.get('/api/studios', async (req, res) => {
+//     try {
+//         const { category, search, limit } = req.query;
+//         const query = {};
+//         if (category) query.category = category;
+//         if (search) {
+//             query.$or = [
+//                 { title: { $regex: search, $options: 'i' } },
+//                 { location: { $regex: search, $options: 'i' } },
+//             ];
+//         }
+//         const studios = await studioCollection
+//             .find(query)
+//             .sort({ _id: -1 })
+//             .limit(Number(limit) || 0)
+//             .toArray();
+//         res.json(studios);
+//     } catch (err) {
+//         res.status(500).json({ message: err.message });
+//     }
+// });
 app.get('/api/studios', async (req, res) => {
-    try {
-        const { category, search, limit } = req.query;
-        const query = {};
-        if (category) query.category = category;
-        if (search) {
-            query.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } },
-            ];
-        }
-        const studios = await studioCollection
-            .find(query)
-            .sort({ _id: -1 })
-            .limit(Number(limit) || 0)
-            .toArray();
-        res.json(studios);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    const studios = await studioCollection.find().sort({ _id: -1 }).toArray();
+    res.json(studios);
 });
 
 
