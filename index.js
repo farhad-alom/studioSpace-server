@@ -64,6 +64,11 @@ app.get('/api/studios', async (req, res) => {
     res.json(studios);
 });
 
+// studios id
+app.get('/api/studios/:id', async (req, res) => {
+    const studio = await studioCollection.findOne({ _id: new ObjectId(req.params.id) });
+    res.json(studio);
+});
 
 
 app.listen(PORT, () => {
