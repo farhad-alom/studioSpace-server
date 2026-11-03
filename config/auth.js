@@ -1,12 +1,30 @@
 ﻿import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { MongoClient } from "mongodb";
+import { jwt } from "better-auth/plugins/jwt";
+
+
+const isProd = process.env.NODE_ENV === "production";
 
 const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("StudioSpace");
 
 export const auth = betterAuth({
     database: mongodbAdapter(db, { client }),
+    plugins: [
+        jwt({
+            sessionCookieCache: true,
+        }),
+    ],
+    session: {
+        cookieCache: {
+            strategy: "jwt",
+            enabled: true,
+            maxAge: 60 * 60 * 24 * 7,
+        },
+        expiresIn: 60 * 60 * 24 * 7,
+        updateAge: 60 * 60 * 24,
+    },
     emailAndPassword: {
         enabled: true,
         minPasswordLength: 6,
@@ -17,7 +35,29 @@ export const auth = betterAuth({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         },
+
+        // Same-email Google sign-in links to existing password account
+        account: {
+            accountLinking: {
+                enabled: true,
+                trustedProviders: ["google"],
+            },
+        },
+
+
     },
+
+    // Force cookie behaviour based on environment
+    advanced: {
+        useSecureCookies: isProd,
+        defaultCookieAttributes: {
+            sameSite: "lax",
+            path: "/",
+        },
+    },
+
+
+
     trustedOrigins: [
         "http://localhost:3000",
         "https://studio-space-client-five.vercel.app",

@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+﻿import { ObjectId } from 'mongodb';
 import { getBookingCollection, getStudioCollection } from '../config/db.js';
 
 const toMinutes = (t) => {
@@ -58,10 +58,22 @@ export async function addBooking(req, res) {
 
 export async function getMyBookings(req, res) {
     try {
-        const bookings = await getBookingCollection();
-        res.status(200).json(
-            await bookings.find({ userEmail: req.user.email }).sort({ _id: -1 }).toArray()
-        );
+        const bookingCol = await getBookingCollection();
+        const bookings = await bookingCol.find({ userEmail: req.user.email }).sort({ _id: -1 }).toArray();
+        const enrichedBookings = [];
+        for (const booking of bookings) {
+            let studioCategory = null;
+            let studioLocation = null;
+            if (booking.studioId) {
+                const studio = await (await getStudioCollection()).findOne({ _id: new ObjectId(booking.studioId) });
+                if (studio) {
+                    studioCategory = studio.category;
+                    studioLocation = studio.location;
+                }
+            }
+            enrichedBookings.push({ ...booking.toObject ? booking.toObject() : booking, studioCategory, studioLocation });
+        }
+        res.status(200).json(enrichedBookings);
     } catch (error) {
         console.error('My Bookings Error:', error);
         res.status(500).json({ message: 'Failed to fetch bookings' });
