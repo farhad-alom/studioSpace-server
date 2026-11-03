@@ -21,3 +21,6 @@ export function getDb() {
 
 export const getStudioCollection = async () =>
     (await getDb()).collection('StudioCollection');
+
+export const getBookingCollection = async () =>
+    (await getDb()).collection('BookingCollection');
