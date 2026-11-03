@@ -35,16 +35,14 @@ export const auth = betterAuth({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         },
+    },
 
-        // Same-email Google sign-in links to existing password account
-        account: {
-            accountLinking: {
-                enabled: true,
-                trustedProviders: ["google"],
-            },
+    // Must be outside socialProviders
+    account: {
+        accountLinking: {
+            enabled: true,
+            trustedProviders: ["google"],
         },
-
-
     },
 
     // Force cookie behaviour based on environment
