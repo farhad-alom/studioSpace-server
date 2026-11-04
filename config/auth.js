@@ -46,10 +46,12 @@ export const auth = betterAuth({
     },
 
     // Force cookie behaviour based on environment
-    advanced: {
-        useSecureCookies: isProd,
+    advanced: { // this is new section added to the config
+        useSecureCookies: true,
         defaultCookieAttributes: {
-            sameSite: "lax",
+            sameSite: "none",
+            secure: true,
+            httpOnly: true,
             path: "/",
         },
     },
