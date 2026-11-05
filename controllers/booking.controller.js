@@ -85,6 +85,7 @@ export async function cancelBooking(req, res) {
         if (!ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: 'Invalid booking ID' });
         }
+
         const bookings = await getBookingCollection();
         const filter = { _id: new ObjectId(req.params.id) };
         const booking = await bookings.findOne(filter);
@@ -102,5 +103,40 @@ export async function cancelBooking(req, res) {
     } catch (error) {
         console.error('Cancel Booking Error:', error);
         res.status(500).json({ message: 'Failed to cancel booking' });
+    }
+}
+
+export async function confirmBooking(req, res) {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid booking ID' });
+        }
+        const bookings = await getBookingCollection();
+        const filter = { _id: new ObjectId(req.params.id) };
+        const booking = await bookings.findOne(filter);
+
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+        if (booking.userEmail !== req.user.email) {
+            return res.status(403).json({ message: 'Forbidden: not your booking' });
+        }
+        if (booking.status !== 'Pending') {
+            return res.status(400).json({ message: 'Only pending bookings can be confirmed' });
+        }
+        const clash = await bookings.findOne({
+            _id: { $ne: filter._id },
+            studioId: booking.studioId,
+            date: booking.date,
+            status: 'Confirmed',
+            startTime: { $lt: booking.endTime },
+            endTime: { $gt: booking.startTime },
+        });
+        if (clash) {
+            return res.status(409).json({ message: 'Another confirmed booking already covers this time slot.' });
+        }
+        await bookings.updateOne(filter, { $set: { status: 'Confirmed' } });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Confirm Booking Error:', error);
+        res.status(500).json({ message: 'Failed to confirm booking' });
     }
 }
